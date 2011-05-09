@@ -81,7 +81,7 @@ public class MongoStore extends StoreBase implements Store {
                 manager.getContainer().getLogger().debug(sm.getString(getStoreName() + ".loading",
                         id, collectionName));
             }
-			MongoSession session = new MongoSession(manager);
+			MongoSession session = (MongoSession)manager.createEmptySession();
 			try {
 				session.readDBObject(cursor.next());
 				session.setManager(manager);

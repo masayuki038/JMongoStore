@@ -230,13 +230,14 @@ public class MongoSessionTest {
 	}
 
 	protected Manager createMockManager() {
-		StandardManager manager = mock(StandardManager.class);
+		StandardManager manager = mock(MongoManager.class);
 		StandardContext context = mock(StandardContext.class);
 		Log log = mock(Log.class);
 		
 		when(manager.getContainer()).thenReturn(context);
 		when(context.getLogger()).thenReturn(log);
 		when(log.isDebugEnabled()).thenReturn(false);
+		when(manager.createEmptySession()).thenReturn(new MongoSession(manager));
 		return manager;
 	}
 }
