@@ -22,7 +22,7 @@ import org.apache.catalina.session.StandardSession;
 
 public class MongoManager extends StandardManager {
 	
-	private PersistentManager persistentManager;
+	private PersistentManager persistentManager = new PersistentManager();
 	
 
 	public void add(Session session) {
