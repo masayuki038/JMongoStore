@@ -57,8 +57,7 @@ public class MongoSessionTest {
 	public void testMongoSessionToDBObject() throws IOException, ClassNotFoundException, IllegalAccessException, InvocationTargetException, NoSuchMethodException{
 		long now = System.currentTimeMillis();
 		StandardSession mongoSession = createStandardSession(now);
-		DBObject object = MongoSession.createDBObject(mongoSession);
-		String id = (String)object.get("id");
+		String id = mongoSession.getId();
 
 		mongoStore.save(mongoSession);
 		StandardSession session = (StandardSession)mongoStore.load(id);
@@ -74,8 +73,7 @@ public class MongoSessionTest {
 	public void testStandardSessionToDBObject() throws IOException, ClassNotFoundException, IllegalAccessException, InvocationTargetException, NoSuchMethodException{
 		long now = System.currentTimeMillis();
 		StandardSession standardSession = createStandardSession(now);
-		DBObject object = MongoSession.createDBObject(standardSession);
-		String id = (String)object.get("id");
+		String id = standardSession.getId();
 
 		mongoStore.save(standardSession);
 		StandardSession session = (StandardSession)mongoStore.load(id);
@@ -93,14 +91,11 @@ public class MongoSessionTest {
 		StandardSession standardSession = createStandardSession();
 		standardSession.setAttribute("foo", "bar");
 		standardSession.setAttribute("hoge", 1);		
-		DBObject object = MongoSession.createDBObject(standardSession);
-		String id = (String)object.get("id");
+		String id = standardSession.getId();
 		
 		mongoStore.save(standardSession);
 		StandardSession session = (StandardSession)mongoStore.load(id);
 
-		Map map = (Map)object.get("attributes");
-		Assert.assertNotNull(map);
 		Assert.assertEquals("bar", session.getAttribute("foo"));
 		Assert.assertEquals(1, session.getAttribute("hoge"));		
 	}
@@ -112,8 +107,7 @@ public class MongoSessionTest {
 		foo.setId(Long.toString(System.currentTimeMillis()));
 		foo.setCount(30);
 		standardSession.setAttribute("foo", foo);
-		DBObject object = MongoSession.createDBObject(standardSession);
-		String id = (String)object.get("id");
+		String id = standardSession.getId();
 		
 		mongoStore.save(standardSession);
 		StandardSession session = (StandardSession)mongoStore.load(id);
@@ -131,8 +125,7 @@ public class MongoSessionTest {
 		bar.setStringList(new ArrayList(Arrays.asList("hoge", "hogehoge")));
 		
 		standardSession.setAttribute("bar", bar);
-		DBObject object = MongoSession.createDBObject(standardSession);
-		String id = (String)object.get("id");
+		String id = standardSession.getId();
 		
 		mongoStore.save(standardSession);
 		StandardSession session = (StandardSession)mongoStore.load(id);
@@ -155,8 +148,7 @@ public class MongoSessionTest {
 		foo.setBar(bar);
 		
 		mongoSession.setAttribute("foo", foo);
-		DBObject object = MongoSession.createDBObject(mongoSession);
-		String fooId = (String)object.get("id");
+		String fooId = mongoSession.getId();
 		
 		mongoStore.save(mongoSession);
 		StandardSession session = (StandardSession)mongoStore.load(fooId);
@@ -184,8 +176,7 @@ public class MongoSessionTest {
 		foo.setBarList(new ArrayList(Arrays.asList(bar1, bar2)));
 		
 		mongoSession.setAttribute("foo", foo);
-		DBObject object = MongoSession.createDBObject(mongoSession);
-		String fooId = (String)object.get("id");
+		String fooId = mongoSession.getId();
 		
 		mongoStore.save(mongoSession);
 		StandardSession session = (StandardSession)mongoStore.load(fooId);
@@ -207,8 +198,7 @@ public class MongoSessionTest {
 		set.add("foo");
 		set.add("bar");
 		mongoSession.setAttribute("set", set);
-		DBObject object = MongoSession.createDBObject(mongoSession);
-		String id = (String)object.get("id");
+		String id = mongoSession.getId();
 		
 		mongoStore.save(mongoSession);
 		StandardSession session = (StandardSession)mongoStore.load(id);

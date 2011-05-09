@@ -3,15 +3,20 @@ package net.wrap_trap.tomcat.session;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.catalina.LifecycleException;
+import org.apache.catalina.Manager;
 import org.apache.catalina.Session;
 import org.apache.catalina.Store;
 import org.apache.catalina.session.StandardSession;
 import org.apache.catalina.session.StoreBase;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.reflect.FieldUtils;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
@@ -86,7 +91,7 @@ public class MongoStore extends StoreBase implements Store {
 			StandardSession standardSession = (StandardSession)manager.createEmptySession();
 			standardSession.setManager(manager);
 			try {
-				MongoSession.restoreStandardSession(standardSession, cursor.next());
+				restoreStandardSession(standardSession, cursor.next());
 		        manager.getContainer().getLogger().debug(getStoreName() + ": No persisted data object found");
 				return standardSession;
 			} catch (InstantiationException e) {
@@ -117,7 +122,7 @@ public class MongoStore extends StoreBase implements Store {
 		remove(session.getIdInternal());
 		try {
 			if(session instanceof StandardSession){
-				collection.save(MongoSession.createDBObject((StandardSession)session));
+				collection.save(createDBObject((StandardSession)session));
 			}else{
 				throw new IllegalArgumentException("unexpected session class: " + session.getClass().getName());
 			}
@@ -149,6 +154,57 @@ public class MongoStore extends StoreBase implements Store {
 		}catch(Exception e){
 			throw new LifecycleException(e);
 		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void restoreStandardSession(StandardSession session, DBObject object)
+			throws ClassNotFoundException, IOException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+		session.setAuthType(null); // Transient only
+		session.setCreationTime((Long)object.get("creationTime"));
+		FieldUtils.getField(StandardSession.class, "lastAccessedTime", true).set(session, object.get("lastAccessedTime"));
+		session.setMaxInactiveInterval((Integer)object.get("maxInactiveInterval"));
+		session.setNew((Boolean)object.get("isNew"));
+		session.setValid((Boolean)object.get("isValid"));
+		FieldUtils.getField(StandardSession.class, "thisAccessedTime", true).set(session, object.get("thisAccessedTime"));
+		session.setPrincipal(null); // Transient only
+		session.setId((String)object.get("id"));
+
+		Manager manager = session.getManager();
+		if (manager.getContainer().getLogger().isDebugEnabled())
+            manager.getContainer().getLogger().debug
+                ("readObject() loading session " + session.getId());
+
+
+        boolean isValidSave = session.isValid();
+        session.setValid(true);
+        Map attributeMap = MongoUtils.getMap((DBObject)object.get("attributes"), new HashMap<DBObject, Object>());
+        for(Object name : attributeMap.keySet()){
+        	session.setAttribute((String)name, attributeMap.get(name));
+        }
+        session.setValid(isValidSave);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public DBObject createDBObject(StandardSession standardSession) throws IOException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+		DBObject object = new BasicDBObject();
+        object.put("creationTime", standardSession.getCreationTime());
+        object.put("lastAccessedTime", standardSession.getLastAccessedTime());
+        object.put("maxInactiveInterval", standardSession.getMaxInactiveInterval());
+        object.put("isNew", standardSession.isNew());
+        object.put("isValid", standardSession.isValid());
+        object.put("thisAccessedTime", FieldUtils.getFieldValue(standardSession, "thisAccessedTime", true));
+        object.put("id", standardSession.getId());
+
+        if (standardSession.getManager().getContainer().getLogger().isDebugEnabled())
+        	standardSession.getManager().getContainer().getLogger().debug("writeObject() storing session " + standardSession.getId());
+
+        Map<Object, Object> attributes = new HashMap<Object, Object>();
+        for(Enumeration<String> e = standardSession.getAttributeNames(); e.hasMoreElements();){
+        	String name = e.nextElement();
+        	attributes.put(name, standardSession.getAttribute(name));
+        }
+        object.put("attributes", MongoUtils.getDBObject(attributes, new HashMap<Object, DBObject>()));
+        return object;
 	}
 
 	public String getHost() {

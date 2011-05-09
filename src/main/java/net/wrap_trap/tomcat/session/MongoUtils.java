@@ -1,23 +1,16 @@
 package net.wrap_trap.tomcat.session;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
-
-import org.apache.catalina.Manager;
-import org.apache.catalina.session.StandardSession;
 import org.apache.commons.beanutils.PropertyUtils;
-import org.apache.commons.lang.reflect.FieldUtils;
 import org.bson.BSONObject;
 import org.bson.types.BSONTimestamp;
 import org.bson.types.Binary;
@@ -26,16 +19,12 @@ import org.bson.types.CodeWScope;
 import org.bson.types.ObjectId;
 import org.bson.types.Symbol;
 
-
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
-public class MongoSession {
+public class MongoUtils {
 
-	/** serialVersionUID */
-	private static final long serialVersionUID = 5437987286958208205L;
-	
 	/** CLASS_NAME */
 	private static final String CLASS_NAME = "class";
 	/** COLLECTION_CLASS_NAME */
@@ -44,35 +33,7 @@ public class MongoSession {
 	private static final String COLLECTION_VALUE = "collectionValue";
 	
 	@SuppressWarnings("unchecked")
-	public static void restoreStandardSession(StandardSession session, DBObject object)
-			throws ClassNotFoundException, IOException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-		session.setAuthType(null); // Transient only
-		session.setCreationTime((Long)object.get("creationTime"));
-		FieldUtils.getField(StandardSession.class, "lastAccessedTime", true).set(session, object.get("lastAccessedTime"));
-		session.setMaxInactiveInterval((Integer)object.get("maxInactiveInterval"));
-		session.setNew((Boolean)object.get("isNew"));
-		session.setValid((Boolean)object.get("isValid"));
-		FieldUtils.getField(StandardSession.class, "thisAccessedTime", true).set(session, object.get("thisAccessedTime"));
-		session.setPrincipal(null); // Transient only
-		session.setId((String)object.get("id"));
-
-		Manager manager = session.getManager();
-		if (manager.getContainer().getLogger().isDebugEnabled())
-            manager.getContainer().getLogger().debug
-                ("readObject() loading session " + session.getId());
-
-
-        boolean isValidSave = session.isValid();
-        session.setValid(true);
-        Map attributeMap = getMap((DBObject)object.get("attributes"), new HashMap<DBObject, Object>());
-        for(Object name : attributeMap.keySet()){
-        	session.setAttribute((String)name, attributeMap.get(name));
-        }
-        session.setValid(isValidSave);
-	}
-	
-	@SuppressWarnings("unchecked")
-	protected static Map getMap(DBObject target, Map<DBObject, Object> cached) throws ClassNotFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException{
+	public static Map getMap(DBObject target, Map<DBObject, Object> cached) throws ClassNotFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException{
 		if(cached.containsKey(target)){
 			return (Map)cached.get(target);
 		}
@@ -97,7 +58,7 @@ public class MongoSession {
 	}
 	
 	@SuppressWarnings("unchecked")
-	protected static Collection getList(DBObject target, Map<DBObject, Object> cached) throws ClassNotFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+	public static Collection getList(DBObject target, Map<DBObject, Object> cached) throws ClassNotFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
 		if(cached.containsKey(target)){
 			return (Collection)cached.get(target);
 		}
@@ -123,7 +84,7 @@ public class MongoSession {
 	}
 
 	@SuppressWarnings("unchecked")
-	protected static Object getObject(DBObject dbObject, Map<DBObject, Object> cached) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, InstantiationException{
+	public static Object getObject(DBObject dbObject, Map<DBObject, Object> cached) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, InstantiationException{
 		Map restoredMap = getMap((DBObject)dbObject, cached);
 		if(restoredMap.containsKey(CLASS_NAME)){
 			String className = (String)restoredMap.get(CLASS_NAME);
@@ -134,32 +95,9 @@ public class MongoSession {
 		}
 		return restoredMap;
 	}
-	
-	public static DBObject createDBObject(StandardSession standardSession) throws IOException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-		DBObject object = new BasicDBObject();
-        object.put("creationTime", standardSession.getCreationTime());
-        object.put("lastAccessedTime", standardSession.getLastAccessedTime());
-        object.put("maxInactiveInterval", standardSession.getMaxInactiveInterval());
-        object.put("isNew", standardSession.isNew());
-        object.put("isValid", standardSession.isValid());
-        object.put("thisAccessedTime", FieldUtils.getFieldValue(standardSession, "thisAccessedTime", true));
-        object.put("id", standardSession.getId());
 
-        if (standardSession.getManager().getContainer().getLogger().isDebugEnabled())
-        	standardSession.getManager().getContainer().getLogger().debug("writeObject() storing session " + standardSession.getId());
-
-        Map<Object, Object> attributes = new HashMap<Object, Object>();
-        for(Enumeration<String> e = standardSession.getAttributeNames(); e.hasMoreElements();){
-        	String name = e.nextElement();
-        	attributes.put(name, standardSession.getAttribute(name));
-        }
-        object.put("attributes", convertMapToDBObject(attributes, new HashMap<Object, DBObject>()));
-        return object;
-	}
-
-	
 	@SuppressWarnings("unchecked")
-	protected static DBObject getDBObject(Object target, Map<Object, DBObject> cached)
+	public static DBObject getDBObject(Object target, Map<Object, DBObject> cached)
 			throws IllegalAccessException, InvocationTargetException,
 			NoSuchMethodException {
 		if(target instanceof Map){
