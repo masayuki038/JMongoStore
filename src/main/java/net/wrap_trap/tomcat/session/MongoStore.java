@@ -8,7 +8,9 @@ import java.util.List;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.Session;
 import org.apache.catalina.Store;
+import org.apache.catalina.session.StandardSession;
 import org.apache.catalina.session.StoreBase;
+import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang.StringUtils;
 
 import com.mongodb.BasicDBObject;
@@ -81,7 +83,7 @@ public class MongoStore extends StoreBase implements Store {
                 manager.getContainer().getLogger().debug(sm.getString(getStoreName() + ".loading",
                         id, collectionName));
             }
-			MongoSession session = (MongoSession)manager.createEmptySession();
+			MongoSession session = new MongoSession(manager);
 			try {
 				session.readDBObject(cursor.next());
 				session.setManager(manager);
@@ -113,8 +115,14 @@ public class MongoStore extends StoreBase implements Store {
 	@Override
 	public void save(Session session) throws IOException {
 		remove(session.getIdInternal());
-		MongoSession mongoSession = (MongoSession)session;
+		MongoSession mongoSession = null;
 		try {
+			if(session instanceof MongoSession){
+				mongoSession = (MongoSession)session;
+			}else if(session instanceof StandardSession){
+				mongoSession = new MongoSession(manager);
+				PropertyUtils.copyProperties(mongoSession, session);
+			}
 			collection.save(mongoSession.createDBObject());
 		} catch (IllegalAccessException e) {
 			throw new RuntimeException(e);

@@ -14,6 +14,7 @@ import junit.framework.Assert;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.Manager;
 import org.apache.catalina.core.StandardContext;
+import org.apache.catalina.session.PersistentManager;
 import org.apache.catalina.session.StandardManager;
 import org.apache.juli.logging.Log;
 import org.junit.After;
@@ -230,7 +231,7 @@ public class MongoSessionTest {
 	}
 
 	protected Manager createMockManager() {
-		StandardManager manager = mock(MongoManager.class);
+		Manager manager = mock(Manager.class);
 		StandardContext context = mock(StandardContext.class);
 		Log log = mock(Log.class);
 		
