@@ -119,11 +119,12 @@ public class MongoStore extends StoreBase implements Store {
 		try {
 			if(session instanceof MongoSession){
 				mongoSession = (MongoSession)session;
+				collection.save(mongoSession.createDBObject());
 			}else if(session instanceof StandardSession){
-				mongoSession = new MongoSession(manager);
-				PropertyUtils.copyProperties(mongoSession, session);
+				collection.save(MongoSession.createDBObject((StandardSession)session));
+			}else{
+				throw new IllegalArgumentException("unexpected session class: " + session.getClass().getName());
 			}
-			collection.save(mongoSession.createDBObject());
 		} catch (IllegalAccessException e) {
 			throw new RuntimeException(e);
 		} catch (InvocationTargetException e) {

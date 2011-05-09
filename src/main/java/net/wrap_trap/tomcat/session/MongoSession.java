@@ -5,6 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
@@ -16,6 +17,7 @@ import java.util.regex.Pattern;
 import org.apache.catalina.Manager;
 import org.apache.catalina.session.StandardSession;
 import org.apache.commons.beanutils.PropertyUtils;
+import org.apache.commons.lang.reflect.FieldUtils;
 import org.bson.BSONObject;
 import org.bson.types.BSONTimestamp;
 import org.bson.types.Binary;
@@ -160,8 +162,31 @@ public class MongoSession extends StandardSession {
         return object;
 	}
 	
+	public static DBObject createDBObject(StandardSession standardSession) throws IOException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+		DBObject object = new BasicDBObject();
+        object.put("creationTime", standardSession.getCreationTime());
+        object.put("lastAccessedTime", standardSession.getLastAccessedTime());
+        object.put("maxInactiveInterval", standardSession.getMaxInactiveInterval());
+        object.put("isNew", standardSession.isNew());
+        object.put("isValid", standardSession.isValid());
+        object.put("thisAccessedTime", FieldUtils.getFieldValue(standardSession, "thisAccessedTime", true));
+        object.put("id", standardSession.getId());
+
+        if (standardSession.getManager().getContainer().getLogger().isDebugEnabled())
+        	standardSession.getManager().getContainer().getLogger().debug("writeObject() storing session " + standardSession.getId());
+
+        Map<Object, Object> attributes = new HashMap<Object, Object>();
+        for(Enumeration<String> e = standardSession.getAttributeNames(); e.hasMoreElements();){
+        	String name = e.nextElement();
+        	attributes.put(name, standardSession.getAttribute(name));
+        }
+        object.put("attributes", convertMapToDBObject(attributes, new HashMap<Object, DBObject>()));
+        return object;
+	}
+
+	
 	@SuppressWarnings("unchecked")
-	protected DBObject getDBObject(Object target, Map<Object, DBObject> cached)
+	protected static DBObject getDBObject(Object target, Map<Object, DBObject> cached)
 			throws IllegalAccessException, InvocationTargetException,
 			NoSuchMethodException {
 		if(target instanceof Map){
@@ -174,7 +199,7 @@ public class MongoSession extends StandardSession {
 	}
 	
 	@SuppressWarnings("unchecked")
-	protected DBObject convertMapToDBObject(Map map, Map<Object, DBObject> cached) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException{
+	protected static DBObject convertMapToDBObject(Map map, Map<Object, DBObject> cached) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException{
 		if(cached.containsKey(map)){
 			return cached.get(map);
 		}
@@ -192,7 +217,7 @@ public class MongoSession extends StandardSession {
 	}
 
 	@SuppressWarnings("unchecked")
-	protected DBObject convertIterableToDBObject(Iterable target, Map<Object, DBObject> cached) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+	protected static DBObject convertIterableToDBObject(Iterable target, Map<Object, DBObject> cached) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
 		if(cached.containsKey(target)){
 			return cached.get(target);
 		}
@@ -213,7 +238,7 @@ public class MongoSession extends StandardSession {
 	}
 
 	@SuppressWarnings("unchecked")
-	protected DBObject convertPojoToDBObject(Object object, Map<Object, DBObject> cached) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException{
+	protected static DBObject convertPojoToDBObject(Object object, Map<Object, DBObject> cached) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException{
 		if(cached.containsKey(object)){
 			return cached.get(object);
 		}
@@ -222,7 +247,7 @@ public class MongoSession extends StandardSession {
 		return convertMapToDBObject(nestedMap, cached);	
 	}
 	
-	protected boolean isConvertableValue(Object val){
+	protected static boolean isConvertableValue(Object val){
         return (
     			val == null
     			|| val instanceof Date

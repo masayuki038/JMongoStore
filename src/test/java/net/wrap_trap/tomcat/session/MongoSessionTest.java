@@ -16,6 +16,7 @@ import org.apache.catalina.Manager;
 import org.apache.catalina.core.StandardContext;
 import org.apache.catalina.session.PersistentManager;
 import org.apache.catalina.session.StandardManager;
+import org.apache.catalina.session.StandardSession;
 import org.apache.juli.logging.Log;
 import org.junit.After;
 import org.junit.Before;
@@ -53,7 +54,7 @@ public class MongoSessionTest {
 	}
 	
 	@Test
-	public void testSessionToDBObject() throws IOException, ClassNotFoundException, IllegalAccessException, InvocationTargetException, NoSuchMethodException{
+	public void testMongoSessionToDBObject() throws IOException, ClassNotFoundException, IllegalAccessException, InvocationTargetException, NoSuchMethodException{
 		long now = System.currentTimeMillis();
 		MongoSession mongoSession = createMongoSession(now);
 		DBObject object = mongoSession.createDBObject();
@@ -70,7 +71,25 @@ public class MongoSessionTest {
 	}
 	
 	@Test
-	public void testSessionAttributeToDBObject() throws IOException, ClassNotFoundException, IllegalAccessException, InvocationTargetException, NoSuchMethodException{
+	public void testStandardSessionToDBObject() throws IOException, ClassNotFoundException, IllegalAccessException, InvocationTargetException, NoSuchMethodException{
+		long now = System.currentTimeMillis();
+		StandardSession standardSession = createMongoSession(now);
+		DBObject object = MongoSession.createDBObject(standardSession);
+		String id = (String)object.get("id");
+
+		mongoStore.save(standardSession);
+		MongoSession session = (MongoSession)mongoStore.load(id);
+
+		Assert.assertEquals(Long.toString(now), session.getId());
+		Assert.assertEquals(now, session.getCreationTime());
+		Assert.assertEquals(30, session.getMaxInactiveInterval());
+		Assert.assertEquals(false, session.isNew());
+		Assert.assertEquals(true, session.isValid());
+	}
+
+	
+	@Test
+	public void testMongoSessionAttributeToDBObject() throws IOException, ClassNotFoundException, IllegalAccessException, InvocationTargetException, NoSuchMethodException{
 		MongoSession mongoSession = createMongoSession();
 		mongoSession.setAttribute("foo", "bar");
 		mongoSession.setAttribute("hoge", 1);		
@@ -228,6 +247,20 @@ public class MongoSessionTest {
 		mongoSession.setNew(false);
 		mongoSession.setValid(true);
 		return mongoSession;
+	}
+
+	protected StandardSession createStandardSession() {
+		return createStandardSession(System.currentTimeMillis());
+	}
+
+	protected StandardSession createStandardSession(long now) {
+		StandardSession standardSession = new StandardSession(manager);
+		standardSession.setId(Long.toString(now));
+		standardSession.setCreationTime(now);
+		standardSession.setMaxInactiveInterval(30);
+		standardSession.setNew(false);
+		standardSession.setValid(true);
+		return standardSession;
 	}
 
 	protected Manager createMockManager() {
