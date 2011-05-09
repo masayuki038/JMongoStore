@@ -31,58 +31,48 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
-public class MongoSession extends StandardSession {
+public class MongoSession {
 
 	/** serialVersionUID */
 	private static final long serialVersionUID = 5437987286958208205L;
 	
 	/** CLASS_NAME */
 	private static final String CLASS_NAME = "class";
+	/** COLLECTION_CLASS_NAME */
 	private static final String COLLECTION_CLASS_NAME = "collectionClass";
+	/** COLLECTION_VALUE */
 	private static final String COLLECTION_VALUE = "collectionValue";
-
-	public MongoSession(Manager manager) {
-		super(manager);
-	}
-
+	
 	@SuppressWarnings("unchecked")
-	public void readDBObject(DBObject object)
+	public static void restoreStandardSession(StandardSession session, DBObject object)
 			throws ClassNotFoundException, IOException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-        authType = null;  // Transient only
-        creationTime = (Long)object.get("creationTime");
-        lastAccessedTime = (Long)object.get("lastAccessedTime");
-        maxInactiveInterval = (Integer)object.get("maxInactiveInterval");
-        isNew = (Boolean)object.get("isNew");
-        isValid = (Boolean)object.get("isValid");
-        thisAccessedTime = (Long)object.get("thisAccessedTime");
-        principal = null; // Transient only
-        id = (String)object.get("id");
-        if (manager.getContainer().getLogger().isDebugEnabled())
+		session.setAuthType(null); // Transient only
+		session.setCreationTime((Long)object.get("creationTime"));
+		FieldUtils.getField(StandardSession.class, "lastAccessedTime", true).set(session, object.get("lastAccessedTime"));
+		session.setMaxInactiveInterval((Integer)object.get("maxInactiveInterval"));
+		session.setNew((Boolean)object.get("isNew"));
+		session.setValid((Boolean)object.get("isValid"));
+		FieldUtils.getField(StandardSession.class, "thisAccessedTime", true).set(session, object.get("thisAccessedTime"));
+		session.setPrincipal(null); // Transient only
+		session.setId((String)object.get("id"));
+
+		Manager manager = session.getManager();
+		if (manager.getContainer().getLogger().isDebugEnabled())
             manager.getContainer().getLogger().debug
-                ("readObject() loading session " + id);
+                ("readObject() loading session " + session.getId());
 
 
-        if (attributes == null){
-            attributes = new Hashtable();
-        }
-        boolean isValidSave = isValid;
-        isValid = true;
+        boolean isValidSave = session.isValid();
+        session.setValid(true);
         Map attributeMap = getMap((DBObject)object.get("attributes"), new HashMap<DBObject, Object>());
-        attributes.putAll(attributeMap);
-
-        isValid = isValidSave;
-
-        if (listeners == null) {
-            listeners = new ArrayList();
+        for(Object name : attributeMap.keySet()){
+        	session.setAttribute((String)name, attributeMap.get(name));
         }
-
-        if (notes == null) {
-            notes = new Hashtable();
-        }
+        session.setValid(isValidSave);
 	}
 	
 	@SuppressWarnings("unchecked")
-	protected Map getMap(DBObject target, Map<DBObject, Object> cached) throws ClassNotFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException{
+	protected static Map getMap(DBObject target, Map<DBObject, Object> cached) throws ClassNotFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException{
 		if(cached.containsKey(target)){
 			return (Map)cached.get(target);
 		}
@@ -107,7 +97,7 @@ public class MongoSession extends StandardSession {
 	}
 	
 	@SuppressWarnings("unchecked")
-	protected Collection getList(DBObject target, Map<DBObject, Object> cached) throws ClassNotFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+	protected static Collection getList(DBObject target, Map<DBObject, Object> cached) throws ClassNotFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
 		if(cached.containsKey(target)){
 			return (Collection)cached.get(target);
 		}
@@ -133,7 +123,7 @@ public class MongoSession extends StandardSession {
 	}
 
 	@SuppressWarnings("unchecked")
-	protected Object getObject(DBObject dbObject, Map<DBObject, Object> cached) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, InstantiationException{
+	protected static Object getObject(DBObject dbObject, Map<DBObject, Object> cached) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, InstantiationException{
 		Map restoredMap = getMap((DBObject)dbObject, cached);
 		if(restoredMap.containsKey(CLASS_NAME)){
 			String className = (String)restoredMap.get(CLASS_NAME);
@@ -143,23 +133,6 @@ public class MongoSession extends StandardSession {
 			return restoredObject;
 		}
 		return restoredMap;
-	}
-
-	public DBObject createDBObject() throws IOException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-		DBObject object = new BasicDBObject();
-        object.put("creationTime", creationTime);
-        object.put("lastAccessedTime", lastAccessedTime);
-        object.put("maxInactiveInterval", maxInactiveInterval);
-        object.put("isNew", isNew);
-        object.put("isValid", isValid);
-        object.put("thisAccessedTime", thisAccessedTime);
-        object.put("id", id);
-
-        if (manager.getContainer().getLogger().isDebugEnabled())
-            manager.getContainer().getLogger().debug("writeObject() storing session " + id);
-
-        object.put("attributes", convertMapToDBObject(attributes, new HashMap<Object, DBObject>()));
-        return object;
 	}
 	
 	public static DBObject createDBObject(StandardSession standardSession) throws IOException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
@@ -207,7 +180,7 @@ public class MongoSession extends StandardSession {
 		DBObject ret = new BasicDBObject();
 		for(Object key : map.keySet()){
 			Object target = map.get(key);
-			if(isConvertableValue(target)){
+			if(isAcceptableValue(target)){
 				ret.put(key.toString(), target);
 			}else{
 				ret.put(key.toString(), getDBObject(target, cached));
@@ -224,7 +197,7 @@ public class MongoSession extends StandardSession {
 
 		BasicDBList list = new BasicDBList();
 		for(Object object : (Iterable)target){
-			if(isConvertableValue(object)){
+			if(isAcceptableValue(object)){
 				list.add(object);
 			}else{
 				list.add(getDBObject(object, cached));
@@ -247,7 +220,7 @@ public class MongoSession extends StandardSession {
 		return convertMapToDBObject(nestedMap, cached);	
 	}
 	
-	protected static boolean isConvertableValue(Object val){
+	protected static boolean isAcceptableValue(Object val){
         return (
     			val == null
     			|| val instanceof Date

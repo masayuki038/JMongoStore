@@ -83,12 +83,12 @@ public class MongoStore extends StoreBase implements Store {
                 manager.getContainer().getLogger().debug(sm.getString(getStoreName() + ".loading",
                         id, collectionName));
             }
-			MongoSession session = new MongoSession(manager);
+			StandardSession standardSession = (StandardSession)manager.createEmptySession();
+			standardSession.setManager(manager);
 			try {
-				session.readDBObject(cursor.next());
-				session.setManager(manager);
+				MongoSession.restoreStandardSession(standardSession, cursor.next());
 		        manager.getContainer().getLogger().debug(getStoreName() + ": No persisted data object found");
-				return session;
+				return standardSession;
 			} catch (InstantiationException e) {
 				throw new RuntimeException(e);
 			} catch (IllegalAccessException e) {
@@ -115,12 +115,8 @@ public class MongoStore extends StoreBase implements Store {
 	@Override
 	public void save(Session session) throws IOException {
 		remove(session.getIdInternal());
-		MongoSession mongoSession = null;
 		try {
-			if(session instanceof MongoSession){
-				mongoSession = (MongoSession)session;
-				collection.save(mongoSession.createDBObject());
-			}else if(session instanceof StandardSession){
+			if(session instanceof StandardSession){
 				collection.save(MongoSession.createDBObject((StandardSession)session));
 			}else{
 				throw new IllegalArgumentException("unexpected session class: " + session.getClass().getName());
