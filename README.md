@@ -3,7 +3,7 @@ MongoStore is a Store class to persistent sessions of Tomcat to MongoDB.
 ## Usage
 
 1. Copy mongo-store.jar and mongo-java-driver.jar to ${CATALINA_HOME}/lib.
-2. Setting to use the PersistentManager in Context. for example,
+2. Set to use the PersistentManager in Context. for example,
 <pre><code>
 &lt;Context antiResourceLocking="false" privileged="true" useHttpOnly="true"&gt;
     &lt;Manager className="org.apache.catalina.session.PersistentManager" 
