@@ -177,11 +177,15 @@ public class MongoStore extends StoreBase implements Store {
 
         boolean isValidSave = session.isValid();
         session.setValid(true);
-        Map attributeMap = MongoUtils.getMap((DBObject)object.get("attributes"), new HashMap<DBObject, Object>());
+        Map attributeMap = createRestorer().toMap((DBObject)object.get("attributes"));
         for(Object name : attributeMap.keySet()){
         	session.setAttribute((String)name, attributeMap.get(name));
         }
         session.setValid(isValidSave);
+	}
+	
+	protected Restorer createRestorer(){
+		return new Restorer();
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -203,8 +207,12 @@ public class MongoStore extends StoreBase implements Store {
         	String name = e.nextElement();
         	attributes.put(name, standardSession.getAttribute(name));
         }
-        object.put("attributes", MongoUtils.getDBObject(attributes, new HashMap<Object, DBObject>()));
+        object.put("attributes", createDBObjectBuilder().build(attributes));
         return object;
+	}
+	
+	protected DBObjectBuilder createDBObjectBuilder(){
+		return new DBObjectBuilder();
 	}
 
 	public String getHost() {

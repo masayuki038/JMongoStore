@@ -1,8 +1,9 @@
 package net.wrap_trap.tomcat.session;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class Bar {
+public class Bar implements Serializable{
 	
 	private String id;
 	

@@ -2,11 +2,9 @@ package net.wrap_trap.tomcat.session;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import junit.framework.Assert;
@@ -14,20 +12,12 @@ import junit.framework.Assert;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.Manager;
 import org.apache.catalina.core.StandardContext;
-import org.apache.catalina.session.PersistentManager;
-import org.apache.catalina.session.StandardManager;
 import org.apache.catalina.session.StandardSession;
 import org.apache.juli.logging.Log;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.code.morphia.Datastore;
-import com.google.code.morphia.Morphia;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
-import com.mongodb.Mongo;
 import com.mongodb.MongoException;
 
 import static org.mockito.Mockito.*; 
