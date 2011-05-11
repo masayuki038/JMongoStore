@@ -22,7 +22,7 @@ MongoStore is a Store class to persistent sessions of Tomcat to MongoDB.
 &lt;/Context&gt;
 </code></pre>
 
-## Parameters of MongoStore.
+## Parameters of MongoStore
 
 * host
 * port
