@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>net.wrap-trap.tomcat.store</groupId>
-  <artifactId>mongo</artifactId>
+  <artifactId>mongo-store</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
