@@ -1,4 +1,4 @@
-MongoStore is a Store class to persistent sessions of Tomcat to MongoDB.
+JMongoStore is a Store class to persistent sessions of Tomcat to MongoDB.
 
 ## Usage
 
