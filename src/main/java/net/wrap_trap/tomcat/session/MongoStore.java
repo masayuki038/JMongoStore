@@ -65,8 +65,8 @@ public class MongoStore extends StoreBase implements Store {
 			DBCursor cursor = collection.find();
 			while(cursor.hasNext()){
 				DBObject dbObject = cursor.next();
+				backupRemovedSession(dbObject);
 				collection.remove(dbObject);
-				collectionForRemoved.save(dbObject);
 			}
 		}else{
 			collection.drop();
@@ -129,10 +129,10 @@ public class MongoStore extends StoreBase implements Store {
 		DBCursor cursor = collection.find(query);
 		while(cursor.hasNext()){
 			DBObject dbObject = cursor.next();
-			collection.remove(dbObject);
 			if(collectionForRemoved != null){
-				collectionForRemoved.save(dbObject);
+				backupRemovedSession(dbObject);
 			}
+			collection.remove(dbObject);
 		}
 	}
 
@@ -231,6 +231,17 @@ public class MongoStore extends StoreBase implements Store {
         }
         object.put("attributes", createDBObjectBuilder().build(attributes));
         return object;
+	}
+	
+	protected void backupRemovedSession(DBObject dbObject) {
+		DBObject query = new BasicDBObject();
+		query.put("id", dbObject.get("id"));
+		DBCursor cursor = collectionForRemoved.find(query);
+		while(cursor.hasNext()){
+			DBObject target = cursor.next();
+			collectionForRemoved.remove(target);
+		}
+		collectionForRemoved.save(dbObject);
 	}
 	
 	protected DBObjectBuilder createDBObjectBuilder(){
