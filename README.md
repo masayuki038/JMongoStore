@@ -28,6 +28,7 @@ JMongoStore is a Store class to persistent sessions of Tomcat to MongoDB.
 * port
 * databaseName
 * collectionName
+* collectionNameForRemoved - (optional) moving sessions to this collection instead of deleting them.
 
 ## Blog Article
 
