@@ -41,6 +41,9 @@ public class MongoStore extends StoreBase implements Store {
 	/** collectionName */
 	private String collectionName;
 	
+	/** collectionNameForRemoved */
+	private String collectionNameForRemoved;
+	
 	/** user */
 	private String user;
 	
@@ -53,9 +56,21 @@ public class MongoStore extends StoreBase implements Store {
 	/** Collection */
 	private DBCollection collection;
 	
+	/** Collection for storing removed sessions. */
+	private DBCollection collectionForRemoved; 
+	
 	@Override
 	public void clear() throws IOException {
-		collection.drop();
+		if(collectionForRemoved != null){
+			DBCursor cursor = collection.find();
+			while(cursor.hasNext()){
+				DBObject dbObject = cursor.next();
+				collection.remove(dbObject);
+				collectionForRemoved.save(dbObject);
+			}
+		}else{
+			collection.drop();
+		}
 	}
 
 	@Override
@@ -113,7 +128,11 @@ public class MongoStore extends StoreBase implements Store {
 		query.put("id", id);
 		DBCursor cursor = collection.find(query);
 		while(cursor.hasNext()){
-			collection.remove(cursor.next());
+			DBObject dbObject = cursor.next();
+			collection.remove(dbObject);
+			if(collectionForRemoved != null){
+				collectionForRemoved.save(dbObject);
+			}
 		}
 	}
 
@@ -151,6 +170,9 @@ public class MongoStore extends StoreBase implements Store {
 				}
 			}
 			collection = db.getCollection(collectionName);
+			if(!StringUtils.isEmpty(collectionNameForRemoved)){
+				collectionForRemoved = db.getCollection(collectionNameForRemoved);
+			}
 		}catch(Exception e){
 			throw new LifecycleException(e);
 		}
@@ -262,4 +284,16 @@ public class MongoStore extends StoreBase implements Store {
 	public void setCollectionName(String collectionName) {
 		this.collectionName = collectionName;
 	}
+
+	public String getCollectionNameForRemoved() {
+		return collectionNameForRemoved;
+	}
+
+	public void setCollectionNameForRemoved(String collectionNameForRemoved) {
+		this.collectionNameForRemoved = collectionNameForRemoved;
+	}
+
+	protected DBCollection getCollectionForRemoved() {
+		return collectionForRemoved;
+	}	
 }

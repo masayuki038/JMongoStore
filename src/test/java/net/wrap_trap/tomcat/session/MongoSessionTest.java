@@ -18,6 +18,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 
 import static org.mockito.Mockito.*; 
@@ -33,10 +37,15 @@ public class MongoSessionTest {
 		mongoStore.setHost("localhost");
 		mongoStore.setDatabaseName("test");
 		mongoStore.setCollectionName("sessions");
+		mongoStore.setCollectionNameForRemoved("removed_sessions");
 		manager = createMockManager();
 		mongoStore.setManager(manager);
 		mongoStore.start();
 		mongoStore.clear();
+		DBCollection collectionForRemoved = mongoStore.getCollectionForRemoved();
+		if(collectionForRemoved != null){
+			collectionForRemoved.drop();
+		}
 	}
 	
 	@After
@@ -198,7 +207,77 @@ public class MongoSessionTest {
 		Assert.assertTrue(dbSet.contains("foo"));
 		Assert.assertTrue(dbSet.contains("bar"));
 	}
+	
+	@Test
+	public void testSessionRemoved() throws IOException, ClassNotFoundException{
+		StandardSession standardSession = createStandardSession();
+		standardSession.setAttribute("foo", "bar");
+		standardSession.setAttribute("hoge", 1);		
+		String id = standardSession.getId();
+		
+		mongoStore.save(standardSession);
+		StandardSession session = (StandardSession)mongoStore.load(id);
+		Assert.assertNotNull(session);
+		Assert.assertEquals(id, session.getId());
+		mongoStore.remove(id);
+	
+		StandardSession removedSession = (StandardSession)mongoStore.load(id);
+		Assert.assertNull(removedSession);
+		DBCollection collectionForRemoved = mongoStore.getCollectionForRemoved();
+		if(collectionForRemoved != null){
+			BasicDBObject query = new BasicDBObject();
+			query.put("id", id);
+			DBCursor cursor = collectionForRemoved.find(query);
+			while(cursor.hasNext()){
+				DBObject dbObject = cursor.next();
+				Assert.assertNotNull(dbObject);
+				Assert.assertEquals(id, dbObject.get("id"));
+				DBObject attributes = (DBObject)dbObject.get("attributes");
+				Assert.assertNotNull(attributes);
+				
+				Assert.assertEquals(id, dbObject.get("id"));
+				Assert.assertEquals("bar", attributes.get("foo"));
+				Assert.assertEquals(1, attributes.get("hoge"));
+			}
+		}
+	}
 
+	@Test
+	public void testClear() throws IOException, ClassNotFoundException{
+		DBCollection collectionForRemoved = mongoStore.getCollectionForRemoved();
+		if(collectionForRemoved != null){
+			Assert.assertEquals(0, collectionForRemoved.getCount());
+		}
+		
+		StandardSession standardSession = createStandardSession();
+		String id1 = standardSession.getId();
+		mongoStore.save(standardSession);
+
+		standardSession = createStandardSession();
+		String id2 = standardSession.getId();
+		mongoStore.save(standardSession);
+		
+		mongoStore.clear();
+		
+		StandardSession removedSession = (StandardSession)mongoStore.load(id1);
+		Assert.assertNull(removedSession);
+		removedSession = (StandardSession)mongoStore.load(id2);
+		Assert.assertNull(removedSession);
+		Assert.assertEquals(0, mongoStore.getSize());
+		
+		if(collectionForRemoved != null){
+			Assert.assertEquals(2, collectionForRemoved.getCount());
+			BasicDBObject query = new BasicDBObject();
+			query.put("id", id1);
+			DBCursor cursor = collectionForRemoved.find(query);
+			Assert.assertEquals(1, cursor.count());
+			
+			query.put("id", id2);
+			cursor = collectionForRemoved.find(query);
+			Assert.assertEquals(1, cursor.count());
+		}
+	}
+		
 	private void checkFoo(Foo foo, Foo dbFoo) {
 		Assert.assertEquals(foo.getId(), dbFoo.getId());
 		Assert.assertEquals(foo.getCount(), dbFoo.getCount());
