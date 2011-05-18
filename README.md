@@ -1,5 +1,13 @@
 JMongoStore is a Store class to persistent sessions of Tomcat to MongoDB.
 
+## Make Jar
+
+<pre><code>
+mvn package -Dmaven.test.skip=true
+</code></pre>
+
+if running the tests when packaging, see <a href="https://github.com/masayuki038/JMongoStore/blob/master/src/test/java/net/wrap_trap/tomcat/session/MongoSessionTest.java">here</a> and setting up the MongoDB.
+
 ## Usage
 
 1. Copy mongo-store.jar and mongo-java-driver.jar to ${CATALINA_HOME}/lib.
