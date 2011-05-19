@@ -3,9 +3,6 @@ package net.wrap_trap.tomcat.session;
 import java.io.Serializable;
 import java.util.List;
 
-import com.google.code.morphia.annotations.Embedded;
-
-@Embedded
 public class Foo implements Serializable{
 
 	private String id;
