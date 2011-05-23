@@ -8,6 +8,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.wrap_trap.monganez.DBObjectDecoder;
+import net.wrap_trap.monganez.DBObjectEncoder;
+
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.Manager;
 import org.apache.catalina.Session;
@@ -206,8 +209,8 @@ public class MongoStore extends StoreBase implements Store {
         session.setValid(isValidSave);
 	}
 	
-	protected Restorer createRestorer(){
-		return new Restorer();
+	protected DBObjectDecoder createRestorer(){
+		return new DBObjectDecoder();
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -229,7 +232,7 @@ public class MongoStore extends StoreBase implements Store {
         	String name = e.nextElement();
         	attributes.put(name, standardSession.getAttribute(name));
         }
-        object.put("attributes", createDBObjectBuilder().build(attributes));
+        object.put("attributes", createDBObjectBuilder().encode(attributes));
         return object;
 	}
 	
@@ -244,8 +247,8 @@ public class MongoStore extends StoreBase implements Store {
 		collectionForRemoved.save(dbObject);
 	}
 	
-	protected DBObjectBuilder createDBObjectBuilder(){
-		return new DBObjectBuilder();
+	protected DBObjectEncoder createDBObjectBuilder(){
+		return new DBObjectEncoder();
 	}
 
 	public String getHost() {

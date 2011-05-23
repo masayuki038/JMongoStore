@@ -27,7 +27,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
-
+  
   <dependencies>
     <dependency>
     	<groupId>org.apache.tomcat</groupId>
@@ -78,6 +78,13 @@
     	<type>jar</type>
     	<scope>compile</scope>
     </dependency>
+    <dependency>
+    	<groupId>net.wrap-trap</groupId>
+    	<artifactId>monganez</artifactId>
+    	<version>0.0.1-SNAPSHOT</version>	
+    	<type>jar</type>
+    	<scope>compile</scope>
+    </dependency>
   </dependencies>
   <repositories>
     <repository>
@@ -86,9 +93,9 @@
       <url>http://tomcat.apache.org/dev/dist/m2-repository/org/apache/tomcat</url>
     </repository>
     <repository>
-      <id>google code</id>
-      <name>Google Code</name>
-      <url>http://morphia.googlecode.com/svn/mavenrepo/</url>
-    </repository>
+      <id>wrap-trap.net/maven2/snapshot</id>
+      <name>wrap-trap.net Maven Snapshot Repository</name>
+      <url>http://wrap-trap.net/maven2/snapshot</url>
+    </repository>    
   </repositories>
 </project>
