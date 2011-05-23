@@ -11,7 +11,7 @@ if running the tests when packaging, see <a href="https://github.com/masayuki038
 ## Usage
 
 1. Copy jars to ${CATALINA_HOME}/lib.
-mongo-store-0.0.1-SNAPSHOT.jar / monganez-0.0.1-SNAPSHOT.jar / mongo-java-driver-2.x.jar
+(mongo-store-0.0.1-SNAPSHOT.jar / monganez-0.0.1-SNAPSHOT.jar / mongo-java-driver-2.x.jar)
 2. Set to use the PersistentManager in Context. for example,
 <pre><code>
 &lt;Context antiResourceLocking="false" privileged="true" useHttpOnly="true"&gt;
